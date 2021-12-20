@@ -188,18 +188,69 @@ int main (int argc, char**argv)
 ```
 s2 : 0x7ffcf7735da0               //3488
 TStudent1.id : 0x7ffcf7735da0     //3488
-TStudent1.name : 0x7ffcf7735da4   //3492
-TStudent1.age : 0x7ffcf7735e08    //3592
-TStudent1.height : 0x7ffcf7735e10 //3600
-TStudent1.weight : 0x7ffcf7735e18 //3608
-TStudent1.tag : 0x7ffcf7735e20    //3616
+TStudent1.name : 0x7ffcf7735da4   //3492 = 3488 + 4
+TStudent1.age : 0x7ffcf7735e08    //3592 = 3492 + 100
+TStudent1.height : 0x7ffcf7735e10 //3600 = 3592 + 8
+TStudent1.weight : 0x7ffcf7735e18 //3608 = 3600 + 8
+TStudent1.tag : 0x7ffcf7735e20    //3616 = 3608 + 8
 s3 : 0x7ffcf7735d20               //3360
 TStudent2.tag : 0x7ffcf7735d20    //3360
-TStudent2.id : 0x7ffcf7735d24     //3364
-TStudent2.name : 0x7ffcf7735d28   //3368
-TStudent2.age : 0x7ffcf7735d8c    //3468
-TStudent2.height : 0x7ffcf7735d90 //3472
-TStudent2.weight : 0x7ffcf7735d98 //3480
+TStudent2.id : 0x7ffcf7735d24     //3364 = 3360 + 4
+TStudent2.name : 0x7ffcf7735d28   //3368 = 3364 + 4
+TStudent2.age : 0x7ffcf7735d8c    //3468 = 3368 + 100
+TStudent2.height : 0x7ffcf7735d90 //3472 = 3468 + 4
+TStudent2.weight : 0x7ffcf7735d98 //3480 = 3472 + 8
 ```
 
 ## ここからわかること
+s2では構造体全体の確保メモリが136バイトなので、s2のtagの確保メモリは8バイトであることがわかる。これを踏まえて、s2とs3のそれぞれのメンバ変数の確保メモリの違いを見てみると、ageとtagでの違いに気づける。s2のtagは8バイト確保しているのに対してs3のtagは4バイト確保しており、また、s2のageは8バイト確保しているのに対してs3のageは4バイト確保している。
+  
+では、それぞれの構造体について詳しく見ていこう。
+  
+まず、s2について、idとnameで104バイト確保していて、これはチャンク(8バイト)の倍数である。また、ageのあとのheightの型がdoubleで8バイト確保されるので、idとnameとint型のageの合計バイト数が8の倍数であることが好ましい。よって、ageについてはint型で4バイトしか必要ないにもかかわらず、4バイトパディングして8バイト確保されている。同様に、s2のtagまでに128バイトと8の倍数分のバイト数が確保されているので、tagでは7バイトパディングして8バイト確保されている。
+  
+次に、s3では最初にtagがあり、次にint型のidがある。この二つを合計して8バイトに収まるので、tagでは3バイトパディングして4バイト確保されている。そのあとnameで100バイト確保されて、ここまでで108バイトと8の倍数にならないが、その次のageで4バイト確保されて112バイトとなるので、この構造体ではageは4バイト確保される。
+
+つまり、次に来るメンバ変数のバイト数を考慮して、8バイトの倍数になるようにアライメントされるのではないかと推察できる。次に、s3でのtagをもう一つ増やして先頭につけた以下のような構造体を考えてみる。仮説が正しければ、tag1とtag2とidが8バイトに収まるので、tag1は1バイト、tag2はバイトパディングして3バイト、idは4バイト確保されるはずである。
+```
+#include <stdio.h>
+
+typedef struct tagged_student3
+{
+  char tag1;
+  char tag2;
+  int id;
+  char name[100];
+  int age;
+  double height;
+  double weight;
+} TStudent3;
+
+int main (int argc, char**argv){
+
+  TStudent3 s4;
+
+  printf("s4 : %p\n", &s4);
+  printf("TStudent3.tag1 : %p\n", &s4.tag1);
+  printf("TStudent3.tag2 : %p\n", &s4.tag2);
+  printf("TStudent3.id : %p\n", &s4.id);
+  printf("TStudent3.name : %p\n", s4.name);
+  printf("TStudent3.age : %p\n", &s4.age);
+  printf("TStudent3.height : %p\n", &s4.height);
+  printf("TStudent3.weight : %p\n", &s4.weight);
+}
+```
+下3桁を10進数表示に変換した値を含む実行結果は以下のようになった。
+```
+s4 : 0x7ffd7c997100               //100 → 256
+TStudent3.tag1 : 0x7ffd7c997100   //100 → 256
+TStudent3.tag2 : 0x7ffd7c997101   //101 → 257 = 256 + 1
+TStudent3.id : 0x7ffd7c997104     //104 → 260 = 257 + 3
+TStudent3.name : 0x7ffd7c997108   //108 → 264 = 260 + 4
+TStudent3.age : 0x7ffd7c99716c    //16c → 364 = 264 + 100
+TStudent3.height : 0x7ffd7c997170 //170 → 368 = 364 + 4
+TStudent3.weight : 0x7ffd7c997178 //178 → 376 = 368 + 8
+```
+これを見ると、確かにtag1は1バイト、tag2は3バイト、idは4バイト確保されていて、仮説が正しいと考えられる。
+## まとめ
+アライメントのルールは、後ろのメンバ変数のバイト数を考慮し、前からメンバ変数のバイト数を足し合わせて8の倍数になるようにパディングされるということがわかった。
