@@ -238,6 +238,9 @@ int main (int argc, char**argv){
   printf("TStudent3.age : %p\n", &s4.age);
   printf("TStudent3.height : %p\n", &s4.height);
   printf("TStudent3.weight : %p\n", &s4.weight);
+  printf("size of TStudent3.tag1 : %zu\n", sizeof(s4.tag1));
+  printf("size of TStudent3.tag2 : %zu\n", sizeof(s4.tag2));
+  printf("size of TStudent3.id : %zu\n", sizeof(s4.id));
 }
 ```
 下3桁を10進数表示に変換した値を含む実行結果は以下のようになった。
@@ -250,6 +253,10 @@ TStudent3.name : 0x7ffd7c997108   //108 → 264 = 260 + 4
 TStudent3.age : 0x7ffd7c99716c    //16c → 364 = 264 + 100
 TStudent3.height : 0x7ffd7c997170 //170 → 368 = 364 + 4
 TStudent3.weight : 0x7ffd7c997178 //178 → 376 = 368 + 8
+  
+size of TStudent3.tag1 : 1
+size of TStudent3.tag2 : 1
+size of TStudent3.id : 4
 ```
 これを見ると、確かにtag1は1バイト、tag2は3バイト、idは4バイト確保されていて、仮説が正しいと考えられる。
 ## まとめ
