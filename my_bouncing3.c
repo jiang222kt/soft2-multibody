@@ -6,7 +6,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
-
+#define FUSION_DISTANCE 3
 
 int main(int argc, char **argv)
 {
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 
       /* データがランダムに生成するための乱数種を初期化しておく */
       srand((unsigned int)time(NULL));
-      
+
       set_object_data(objnum, objects, datafile); // ファイルによる初期化
     }
     else{
@@ -175,7 +175,7 @@ void my_plot_objects(Object objs[], const size_t numobj, const double t, const C
   printf("t = %4.1f. ",t);
   for (int i = 0; i < numobj; i++){
     // printf("objs[%d].y = %.2f. ",i, objs[i].y);
-    printf("objs[%d].y = %6.2f. ", i, objs[i].y);
+    printf("objs[%d].y = %6.2f. objs[%d].x = %6.2f. ", i, objs[i].y, i, objs[i].x);
   }
   printf("\n");
 }
@@ -190,10 +190,12 @@ void my_update_velocities(Object objs[], const size_t numobj, const Condition co
     SumFy = 0;
 
     for(int j = 0; j < numobj; j++){
-      if ( j != i ){
-          F = cond.G * objs[i].m * objs[j].m / pow(calc_distance(objs, numobj, i, j), 2.0);
-          Fx = F * (objs[j].x - objs[i].x) / calc_distance(objs, numobj, i, j);
-          Fy = F * (objs[j].y - objs[i].y) / calc_distance(objs, numobj, i, j);
+      if ( j != i || !(((int)(objs[i].x - objs[j].x) == 0 ) && ((int)(objs[i].y - objs[j].y) == 0 ))){
+          int distance = calc_distance(objs, numobj, i, j);
+          if (distance < FUSION_DISTANCE) continue;
+          F = cond.G * objs[i].m * objs[j].m / pow(distance, 2.0);
+          Fx = F * (objs[j].x - objs[i].x) / distance;
+          Fy = F * (objs[j].y - objs[i].y) / distance;
           SumFx += Fx;
           SumFy += Fy;
       }
@@ -213,10 +215,13 @@ void my_update_velocities(Object objs[], const size_t numobj, const Condition co
 void my_update_positions(Object objs[], const size_t numobj, const Condition cond){
   for(int i = 0; i < numobj; i++){
     objs[i].prev_y = objs[i].y;
-    objs[i].y += objs[i].prev_vy*cond.dt;
+    objs[i].y = objs[i].y + objs[i].vy * cond.dt;
     objs[i].prev_x = objs[i].x;
-    objs[i].x += objs[i].prev_vx*cond.dt;
+    objs[i].x = objs[i].x + objs[i].vx * cond.dt;
+
   }
+  /* ポジションを更新したあと、融合を処理 */
+  collision_fusion(numobj, objs);
 }
 
 void my_bounce(Object objs[], const size_t numobj, const Condition cond){
@@ -241,6 +246,44 @@ void my_bounce(Object objs[], const size_t numobj, const Condition cond){
       }else if (objs[i].x < cond.width / (-2.0) && objs[i].prev_x > cond.width/ (-2.0)){
         objs[i].x = (-1.0) * cond.width - objs[i].x;
         objs[i].vx = (-1.0)*objs[i].vx * cond.cor;
+      }
+    }
+  }
+}
+
+/* 融合を検知し、処理する */
+void collision_fusion(const int numobj, Object objs[numobj]){
+
+ /*　融合の要否について自身以降の全オブジェクトをチェックし、該当する場合は処理する */
+  for(int i = 0; i < numobj - 1; i++){
+    if ( objs[i].m != 0 ){
+
+      /* 自身以降の全オブジェクトをチェック */
+      for(int j = i + 1; j < numobj; j++){
+        /* 融合する場合は、objs[i]に結果を格納し、objs[j]をクリアする */
+        if(calc_distance(objs, numobj, i, j) < FUSION_DISTANCE && objs[j].m != 0 ){ 
+
+          int m = objs[i].m + objs[j].m;
+
+          objs[i].x = ( objs[i].x * objs[i].m + objs[j].x * objs[j].m ) / m;
+          objs[i].prev_x = ( objs[i].prev_x * objs[i].m + objs[j].prev_x * objs[j].m ) / m;
+          objs[i].y = ( objs[i].y * objs[i].m + objs[j].y * objs[j].m ) / m;
+          objs[i].prev_y = ( objs[i].prev_y * objs[i].m + objs[j].prev_y * objs[j].m ) / m;
+
+          /* 運動量保存則 */ 
+          objs[i].vx = ( objs[i].vx * objs[i].m + objs[j].vx * objs[j].m ) / m;
+          objs[i].vy = ( objs[i].vy * objs[i].m + objs[j].vy * objs[j].m ) / m;
+          objs[i].m = m;
+
+          /* 融合されるもの ojbs[j] を適当に描画エリア外において、質量や速度等を0にする */
+          objs[j].x = 100;
+          objs[j].prev_x = 100;
+          objs[j].y = 100;
+          objs[j].prev_y = 100;
+          objs[j].vx = 0;
+          objs[j].vy = 0;
+          objs[j].m = 0;
+        }
       }
     }
   }

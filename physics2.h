@@ -37,7 +37,7 @@ void my_plot_objects(Object objs[], const size_t numobj, const double t, const C
 void my_update_velocities(Object objs[], const size_t numobj, const Condition cond);
 void my_update_positions(Object objs[], const size_t numobj, const Condition cond);
 void my_bounce(Object objs[], const size_t numobj, const Condition cond);
-int calc_distance(Object objs[], const size_t numobj, int i, int j);
+double calc_distance(Object objs[], const size_t numobj, int i, int j);
 double rand_data_gen(int min, int max);
 void set_object_data(const int objnum, Object objs[objnum], FILE *datafile);
 void collision_fusion(const int numobj, Object objs[numobj]);

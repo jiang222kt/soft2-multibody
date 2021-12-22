@@ -45,7 +45,7 @@ objects[3] = (Object){ .m = 100000.0, .y = 1000.0, .x = 0.0, .vy = 0.0, .vx = 0.
 // 実習: 以下に my_ で始まる関数を実装する
 // 最終的に phisics2.h 内の事前に用意された関数プロトタイプをコメントアウト
 
-int calc_distance(Object objs[], const size_t numobj, int i, int j){
+double calc_distance(Object objs[], const size_t numobj, int i, int j){
  return sqrt(pow(objs[i].x - objs[j].x, 2) + pow(objs[i].y - objs[j].y, 2));
 }
 
@@ -120,13 +120,15 @@ void my_update_velocities(Object objs[], const size_t numobj, const Condition co
           SumFy += Fy;
       }
     }
-    ax = SumFx / objs[i].m;
-    objs[i].prev_vx = objs[i].vx;
-    objs[i].vx = objs[i].vx + ax * cond.dt;
+    if(objs[i].m != 0.0){
+      ax = SumFx / objs[i].m;
+      objs[i].prev_vx = objs[i].vx;
+      objs[i].vx = objs[i].vx + ax * cond.dt;
 
-    ay = SumFy / objs[i].m;
-    objs[i].prev_vy = objs[i].vy;
-    objs[i].vy = objs[i].vy + ay * cond.dt;
+      ay = SumFy / objs[i].m;
+      objs[i].prev_vy = objs[i].vy;
+      objs[i].vy = objs[i].vy + ay * cond.dt;
+    }
   }
 }
 
@@ -142,23 +144,26 @@ void my_update_positions(Object objs[], const size_t numobj, const Condition con
 void my_bounce(Object objs[], const size_t numobj, const Condition cond){
   for(int i = 0; i < numobj; i++){
     /*  縦方向での跳ね返し処理　*/
-    if(objs[i].y > cond.height / 2 && objs[i].prev_y < cond.height / 2){
-      objs[i].y = cond.height - objs[i].y;
-      objs[i].vy = (-1.0) * objs[i].vy * cond.cor;
+    while((objs[i].y > cond.height / 2.0 && objs[i].prev_y < cond.height / 2.0) || (objs[i].y < cond.height / (-2.0) && objs[i].prev_y > cond.height/ (-2.0))){
+      if(objs[i].y > cond.height / 2.0 && objs[i].prev_y < cond.height / 2.0){
+        objs[i].y = cond.height - objs[i].y;
+        objs[i].vy = (-1.0) * objs[i].vy * cond.cor;
 
-    }else if (objs[i].y < cond.height / (-2) && objs[i].prev_y > cond.height/ (-2)){
-      objs[i].y = (-1) * cond.height - objs[i].y;
-      objs[i].vy = (-1.0)*objs[i].vy * cond.cor;
+      }else if (objs[i].y < cond.height / (-2.0) && objs[i].prev_y > cond.height/ (-2.0)){
+        objs[i].y = (-1.0) * cond.height - objs[i].y;
+        objs[i].vy = (-1.0)*objs[i].vy * cond.cor;
+      }
     }
-
     /*  横方向での跳ね返し処理　*/
-    if(objs[i].x > cond.width / 2 && objs[i].prev_x < cond.width / 2){
-      objs[i].x = cond.width - objs[i].x;
-      objs[i].vx = (-1.0) * objs[i].vx * cond.cor;
+    while((objs[i].x > cond.width / 2.0 && objs[i].prev_x < cond.width / 2.0) || (objs[i].x < cond.width / (-2.0) && objs[i].prev_x > cond.width/ (-2.0))){
+      if(objs[i].x > cond.width / 2.0 && objs[i].prev_x < cond.width / 2.0){
+        objs[i].x = cond.width - objs[i].x;
+        objs[i].vx = (-1.0) * objs[i].vx * cond.cor;
 
-    }else if (objs[i].x < cond.width / (-2) && objs[i].prev_x > cond.width/ (-2)){
-      objs[i].x = (-1) * cond.width - objs[i].x;
-      objs[i].vx = (-1.0)*objs[i].vx * cond.cor;
+      }else if (objs[i].x < cond.width / (-2.0) && objs[i].prev_x > cond.width/ (-2.0)){
+        objs[i].x = (-1.0) * cond.width - objs[i].x;
+        objs[i].vx = (-1.0)*objs[i].vx * cond.cor;
+      }
     }
   }
 }
