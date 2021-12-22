@@ -10,13 +10,16 @@ typedef struct condition
 } Condition;
 
 // 個々の物体を表す構造体
-typedef struct object
-{
+typedef struct object {
   double m;
   double y;
-  double prev_y; // 壁からの反発に使用
+  double x;
+  double prev_y;  // 壁からの反発に使用
+  double prev_x;  // 壁からの反発に使用
   double vy;
+  double vx;      // パラメータを追加
   double prev_vy;
+  double prev_vx; // パラメータを追加
 } Object;
 
 // 授業で用意した関数のプロトタイプ宣言
@@ -29,3 +32,12 @@ void bounce(Object objs[], const size_t numobj, const Condition cond);
 // To do: 以下に上記と同じ引数で実行される my_* を作成
 // 実装できたらmain関数で上記と入れ替えていく
 // my_plot_objects(), my_update_velocities(), my_update_positions(), my_bounce の4つ 
+
+void my_plot_objects(Object objs[], const size_t numobj, const double t, const Condition cond);
+void my_update_velocities(Object objs[], const size_t numobj, const Condition cond);
+void my_update_positions(Object objs[], const size_t numobj, const Condition cond);
+void my_bounce(Object objs[], const size_t numobj, const Condition cond);
+int calc_distance(Object objs[], const size_t numobj, int i, int j);
+double rand_data_gen(int min, int max);
+void set_object_data(const int objnum, Object objs[objnum], FILE *datafile);
+void collision_fusion(const int numobj, Object objs[numobj]);
